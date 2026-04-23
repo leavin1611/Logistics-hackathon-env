@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🚛 Logistics Shipment RL — Live Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --border: #2d3748;
+      --accent: #6366f1;
+      --accent2: #8b5cf6;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --orange: #f97316;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --card-radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-left h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-left p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+    .badge {
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: #a5b4fc;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    select:hover, input:hover { border-color: var(--accent); }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 16px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .stat-card .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-card .sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Reward meter */
+    .reward-bar-container {
+      margin-top: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      height: 4px;
+      overflow: hidden;
+    }
+    .reward-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+
+    /* Grid layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* Shipment cards */
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .shipment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .shipment-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .shipment-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .shipment-card.critical { border-color: var(--red); }
+    .shipment-card.delayed  { border-color: var(--orange); }
+    .shipment-card.on-time  { border-color: var(--green); }
+    .shipment-card.in-transit { border-color: var(--yellow); }
+
+    .ship-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .ship-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a5b4fc;
+    }
+    .status-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .status-DELAYED   { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+    .status-CRITICAL  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .status-IN_TRANSIT{ background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .status-RESOLVED  { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+    .ship-cargo {
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .ship-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+    .meta-item { color: var(--muted); }
+    .meta-item span { color: var(--text); font-weight: 500; }
+    .meta-item.bad span { color: var(--red); }
+    .meta-item.warn span { color: var(--orange); }
+    .meta-item.good span { color: var(--green); }
+
+    .priority-star {
+      position: absolute;
+      top: 12px; right: 12px;
+      font-size: 0.9rem;
+    }
+
+    /* Disruptions panel */
+    .disruptions-panel, .log-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .disruption-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    .disruption-item:last-child { border-bottom: none; }
+    .disruption-dot {
+      width: 8px; height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Step log */
+    .log-panel {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+    .log-entry.step   { background: rgba(99,102,241,0.08); color: #a5b4fc; }
+    .log-entry.start  { background: rgba(16,185,129,0.08); color: #34d399; }
+    .log-entry.end    { background: rgba(245,158,11,0.08);  color: #fbbf24; }
+    .log-entry.error  { background: rgba(239,68,68,0.08);   color: #f87171; }
+
+    /* Status indicator */
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .api-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .api-dot.online  { background: var(--green); }
+    .api-dot.offline { background: var(--red); }
+
+    /* Action panel */
+    .action-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .action-form { display: flex; flex-direction: column; gap: 8px; }
+    .action-form select, .action-form input { width: 100%; }
+    .hint { font-size: 0.72rem; color: var(--muted); margin-top: -4px; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+    }
+    .empty-state .big-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>🚛 Logistics Shipment RL Environment</h1>
+    <p>Meta PyTorch OpenEnv Hackathon — Live Interactive Dashboard</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="api-status">
+      <div class="api-dot" id="apiDot"></div>
+      <span id="apiStatusText">Connecting…</span>
+    </div>
+    <span class="badge">OpenEnv Compatible</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <input id="apiBase" type="text" placeholder="API URL (leave blank for local origin)" value="" style="width:360px;" />
+  <select id="taskSelect">
+    <option value="TASK-EASY">🟢 TASK-EASY — Port Backlog Clearance</option>
+    <option value="TASK-MEDIUM" selected>🟡 TASK-MEDIUM — Mumbai Crisis</option>
+    <option value="TASK-HARD">🔴 TASK-HARD — Multi-Port Collapse</option>
+  </select>
+  <button class="btn btn-primary" id="resetBtn" onclick="doReset()">
+    ▶ Reset Episode
+  </button>
+  <button class="btn btn-secondary" id="statusBtn" onclick="doStatus()" disabled>
+    📡 Get Status
+  </button>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="label">Turn</div>
+    <div class="value" id="statTurn">—</div>
+    <div class="sub" id="statMaxTurns">of — turns</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Cumulative Reward</div>
+    <div class="value" id="statReward" style="color:var(--green)">—</div>
+    <div class="reward-bar-container">
+      <div class="reward-bar-fill" id="rewardBar" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Active Shipments</div>
+    <div class="value" id="statShipments">—</div>
+    <div class="sub" id="statDelayed">— delayed</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Last Action Reward</div>
+    <div class="value" id="statIncReward" style="color:var(--accent)">—</div>
+    <div class="sub" id="statFeedback" style="font-size:0.7rem;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Episode Status</div>
+    <div class="value" id="statDone" style="font-size:1rem;margin-top:4px;">Idle</div>
+    <div class="sub" id="statTask">—</div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="main-grid">
+
+  <!-- Left: Shipments -->
+  <div>
+    <div class="section-title">📦 Active Shipments</div>
+    <div id="shipmentsGrid" class="shipment-grid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="big-icon">🚛</div>
+        <p>Press <strong>Reset Episode</strong> to load a scenario</p>
+      </div>
+    </div>
+
+    <!-- Action panel -->
+    <div class="section-title">⚡ Execute Action</div>
+    <div class="action-panel">
+      <div class="action-form">
+        <select id="actionType" onchange="updateActionForm()">
+          <option value="get_network_status">get_network_status</option>
+          <option value="reroute_shipment">reroute_shipment</option>
+          <option value="set_priority">set_priority</option>
+          <option value="communicate_eta">communicate_eta</option>
+          <option value="escalate">escalate</option>
+          <option value="end_turn">end_turn</option>
+        </select>
+        <div id="actionFields"></div>
+        <button class="btn btn-primary" id="stepBtn" onclick="doStep()" disabled>
+          ↗ Execute Action
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Info panels -->
+  <div>
+    <div class="section-title">🚦 Network Congestion (Multi-Agent)</div>
+    <div class="disruptions-panel" id="loadPanel">
+      <div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">Connecting to network…</div>
+    </div>
+
+    <div class="section-title">🚨 Active Disruptions</div>
+    <div class="disruptions-panel" id="disruptionsPanel">
+      <div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:16px;">No active episode</div>
+    </div>
+
+    <div class="section-title">📋 Episode Log</div>
+    <div class="log-panel" id="logPanel">
+      <div style="color:var(--muted);font-size:0.72rem;font-family:'JetBrains Mono',monospace;text-align:center;padding:16px;">
+        Episode log will appear here…
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let state = { obs: null, done: false, steps: 0 };
+  const logs = [];
+
+  function apiBase() { 
+    const val = document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+    return val || window.location.origin;
+  }
+
+  async function ping() {
+    try {
+      const r = await fetch(apiBase() + '/schema', { signal: AbortSignal.timeout(4000) });
+      const ok = r.ok;
+      document.getElementById('apiDot').className = ok ? 'api-dot online' : 'api-dot offline';
+      document.getElementById('apiStatusText').textContent = ok ? 'API Online' : 'API Error';
+    } catch { 
+      document.getElementById('apiDot').className = 'api-dot offline';
+      document.getElementById('apiStatusText').textContent = 'Offline / Sleeping';
+    }
+  }
+
+  async function doReset() {
+    const btn = document.getElementById('resetBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Resetting…';
+    state.done = false; state.steps = 0; logs.length = 0;
+    try {
+      const task = document.getElementById('taskSelect').value;
+      const r = await fetch(apiBase() + '/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: task })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const obs = await r.json();
+      state.obs = obs;
+      addLog('start', `[START] task=${task} — Episode reset ✓`);
+      renderAll(obs);
+      document.getElementById('statusBtn').disabled = false;
+      document.getElementById('stepBtn').disabled = false;
+    } catch(e) {
+      addLog('error', `Reset failed: ${e.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '▶ Reset Episode';
+    }
+  }
+
+  async function doStatus() {
+    const action = { action_type: 'get_network_status' };
+    await sendStep(action);
+  }
+
+  async function doStep() {
+    const type = document.getElementById('actionType').value;
+    const action = { action_type: type };
+    if (type === 'reroute_shipment') {
+      action.shipment_id = document.getElementById('f_shipment_id')?.value || '';
+      action.new_route   = document.getElementById('f_new_route')?.value || '';
+      action.new_carrier = document.getElementById('f_new_carrier')?.value || '';
+      action.reason      = document.getElementById('f_reason')?.value || '';
+    } else if (type === 'communicate_eta') {
+      action.shipment_id = document.getElementById('f_shipment_id')?.value || '';
+      action.message     = document.getElementById('f_message')?.value || '';
+    } else if (type === 'set_priority') {
+      const raw = document.getElementById('f_priority_ids')?.value || '';
+      action.priority_ids = raw.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (type === 'escalate') {
+      action.shipment_id = document.getElementById('f_shipment_id')?.value || '';
+      action.reason      = document.getElementById('f_reason')?.value || '';
+    }
+    await sendStep(action);
+  }
+
+  async function sendStep(action) {
+    if (state.done) { addLog('error', 'Episode is finished. Reset to play again.'); return; }
+    const btn = document.getElementById('stepBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Executing…';
+    state.steps++;
+    try {
+      const r = await fetch(apiBase() + '/step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(JSON.stringify(err.detail || err));
+      }
+      const data = await r.json();
+      const obs = data.observation;
+      const reward = data.reward ?? 0;
+      state.obs = obs;
+      state.done = data.done;
+      addLog('step', `[STEP ${state.steps}] ${action.action_type}  reward=${reward.toFixed(3)}  done=${data.done}`);
+      if (data.done) addLog('end', `[END] Episode Complete — Cumulative: ${obs.cumulative_reward?.toFixed(3) ?? '?'}`);
+      renderAll(obs, data.done);
+    } catch(e) {
+      addLog('error', `Error: ${e.message.substring(0, 120)}`);
+    } finally {
+      btn.disabled = state.done;
+      btn.innerHTML = '↗ Execute Action';
+    }
+  }
+
+  function renderAll(obs, done = false) {
+    // Stats
+    document.getElementById('statTurn').textContent = obs.turn ?? '0';
+    document.getElementById('statMaxTurns').textContent = `of ${obs.max_turns ?? '?'} turns`;
+    const cr = obs.cumulative_reward ?? 0;
+    document.getElementById('statReward').textContent = cr.toFixed(3);
+    document.getElementById('rewardBar').style.width = Math.min(100, Math.max(0, cr / 2 * 100)) + '%';
+    const ships = obs.shipments ?? [];
+    document.getElementById('statShipments').textContent = ships.length;
+    const delayed = ships.filter(s => s.status !== 'IN_TRANSIT').length;
+    document.getElementById('statDelayed').textContent = `${delayed} disrupted`;
+    document.getElementById('statIncReward').textContent = (obs.incremental_reward ?? 0).toFixed(3);
+    document.getElementById('statFeedback').textContent = obs.feedback ?? '';
+    document.getElementById('statFeedback').title = obs.feedback ?? '';
+    document.getElementById('statDone').textContent = done ? '🏁 Done' : '🟢 Running';
+    document.getElementById('statDone').style.color = done ? 'var(--yellow)' : 'var(--green)';
+    document.getElementById('statTask').textContent = obs.task ?? '';
+
+    // Disruptions
+    const disp = document.getElementById('disruptionsPanel');
+    const disruptions = obs.disruptions ?? [];
+    if (!disruptions.length) {
+      disp.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:8px;">No disruptions</div>';
+    } else {
+      disp.innerHTML = disruptions.map(d => `
+        <div class="disruption-item">
+          <div class="disruption-dot"></div>
+          <span>${d}</span>
+        </div>`).join('');
+    }
+    
+    // Route Load (Theme #1)
+    const loadPanel = document.getElementById('loadPanel');
+    const load = obs.route_load || {};
+    if (!Object.keys(load).length) {
+      loadPanel.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:8px;">No data</div>';
+    } else {
+      loadPanel.innerHTML = Object.entries(load).map(([rid, val]) => {
+        const pct = (val * 100).toFixed(0);
+        const color = val > 0.8 ? 'var(--red)' : val > 0.6 ? 'var(--orange)' : 'var(--green)';
+        return `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+              <span style="font-family:'JetBrains Mono'">${rid} Load</span>
+              <span style="color:${color};font-weight:700">${pct}%</span>
+            </div>
+            <div style="background:var(--border);height:6px;border-radius:999px;overflow:hidden;">
+              <div style="background:${color};width:${pct}%;height:100%;transition:width 0.5s;"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Shipment cards
+    const grid = document.getElementById('shipmentsGrid');
+    if (!ships.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="big-icon">📭</div><p>No shipments</p></div>';
+      return;
+    }
+    grid.innerHTML = ships.map(s => {
+      const slaClass = s.sla_buffer_h < -2 ? 'bad' : s.sla_buffer_h < 0 ? 'warn' : 'good';
+      const cardClass = s.status === 'CRITICAL' ? 'critical' : s.status === 'DELAYED' ? 'delayed' : s.status === 'RESOLVED' ? 'on-time' : 'in-transit';
+      return `
+      <div class="shipment-card ${cardClass}">
+        ${s.priority ? '<div class="priority-star" title="Priority">⭐</div>' : ''}
+        <div class="ship-header">
+          <div class="ship-id">${s.id}</div>
+          <div class="status-pill status-${s.status}">${s.status.replace('_', ' ')}</div>
+        </div>
+        <div class="ship-cargo">${s.cargo}</div>
+        <div class="ship-meta">
+          <div class="meta-item">Route <span>${s.route}</span></div>
+          <div class="meta-item">Carrier <span>${s.carrier}</span></div>
+          <div class="meta-item">Delay <span>${s.delay_h}h</span></div>
+          <div class="meta-item ${slaClass}">SLA Buffer <span>${s.sla_buffer_h}h</span></div>
+          <div class="meta-item">₹ Value <span>${(s.value/1000).toFixed(0)}K</span></div>
+          <div class="meta-item" style="grid-column:1/-1" title="${s.notes}">Notes <span style="font-size:0.72rem">${s.notes ?? '—'}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addLog(type, msg) {
+    logs.unshift({ type, msg, time: new Date().toLocaleTimeString() });
+    const panel = document.getElementById('logPanel');
+    panel.innerHTML = logs.slice(0, 50).map(l =>
+      `<div class="log-entry ${l.type}">[${l.time}] ${l.msg}</div>`
+    ).join('');
+  }
+
+  function updateActionForm() {
+    const type = document.getElementById('actionType').value;
+    const f = document.getElementById('actionFields');
+    const tpl = {
+      reroute_shipment: `
+        <input id="f_shipment_id" placeholder="shipment_id (e.g. SHIP-001)" />
+        <select id="f_new_route"><option value="">Select route...</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>R6</option></select>
+        <input id="f_new_carrier" placeholder="new_carrier (e.g. SpeedLane)" />
+        <input id="f_reason" placeholder="reason for rerouting" />`,
+      communicate_eta: `
+        <input id="f_shipment_id" placeholder="shipment_id (e.g. SHIP-001)" />
+        <input id="f_message" placeholder="ETA message (apologize + reason + ETA)" />
+        <div class="hint">💡 Tip: Include 'apologize', 'ETA', 'port congestion' for higher score</div>`,
+      set_priority: `
+        <input id="f_priority_ids" placeholder="priority_ids (comma-separated: SHIP-001,SHIP-003)" />`,
+      escalate: `
+        <input id="f_shipment_id" placeholder="shipment_id (e.g. SHIP-001)" />
+        <input id="f_reason" placeholder="reason for escalation" />
+        <div class="hint">⚠️ Escalation incurs -0.1 penalty</div>`,
+    };
+    f.innerHTML = tpl[type] || '';
+  }
+
+  // Init
+  ping();
+  setInterval(ping, 15000);
+  updateActionForm();
+</script>
+</body>
+</html>

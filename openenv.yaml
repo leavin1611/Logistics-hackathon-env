@@ -1,0 +1,24 @@
+name: logistics_shipment_env
+version: "0.1.0"
+description: "AI Logistics Coordinator RL Environment — Meta PyTorch OpenEnv Hackathon 2026"
+author: "OpenEnv Hackathon Team"
+tags:
+  - openenv
+  - logistics
+  - reinforcement-learning
+  - real-world
+  - hackathon
+tasks:
+  - id: TASK-EASY
+    name: "Port Backlog Clearance"
+    description: "Single JNPT disruption. 2 shipments, 3 turns."
+    difficulty: easy
+  - id: TASK-MEDIUM
+    name: "Mumbai Crisis Coordination"
+    description: "Port + accident + strike. 4 shipments, 5 turns."
+    difficulty: medium
+  - id: TASK-HARD
+    name: "Multi-Port Network Collapse"
+    description: "3 simultaneous port failures. 7 shipments, 7 turns."
+    difficulty: hard
+entry_point: "server.environment:LogisticsShipmentEnvironment"
